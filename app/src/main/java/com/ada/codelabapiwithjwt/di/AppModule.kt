@@ -2,7 +2,9 @@ package com.ada.codelabapiwithjwt.di
 
 import android.content.Context
 import com.ada.codelabapiwithjwt.SHARED_PREFERENCES_FILE_NAME
+import com.ada.codelabapiwithjwt.network.JWTInterceptor
 import com.ada.codelabapiwithjwt.network.service.AuthService
+import com.ada.codelabapiwithjwt.network.service.ProductsService
 import com.ada.codelabapiwithjwt.storage.SharedPreferencesStorage
 import com.ada.codelabapiwithjwt.storage.Storage
 import com.google.gson.GsonBuilder
@@ -16,11 +18,17 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.create
 import java.util.concurrent.TimeUnit
 
 @Module
 @InstallIn(ActivityComponent::class)
 object AppModule {
+
+    @Provides
+    fun provideProductService(retrofit: Retrofit): ProductsService{
+        return retrofit.create(ProductsService::class.java)
+    }
 
     @Provides
     fun provideStorage(@ApplicationContext appContext: Context): Storage{
@@ -34,7 +42,7 @@ object AppModule {
     }
 
     @Provides
-    fun providesRetrofit(): Retrofit{
+    fun providesRetrofit(storage: Storage): Retrofit{
         val loggingInterceptor = HttpLoggingInterceptor()
         loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
         val okHttpClient = OkHttpClient.Builder()
@@ -42,6 +50,7 @@ object AppModule {
             .writeTimeout(0, TimeUnit.MILLISECONDS)
             .readTimeout(2, TimeUnit.MINUTES)
             .connectTimeout(1, TimeUnit.MINUTES)
+            .addInterceptor(JWTInterceptor(storage))
             .build()
 
         val gson = GsonBuilder()
